@@ -2,7 +2,39 @@
 <head>
   <title>My map</title>
 </head>
+<style>
+#map {
+  width: 100%;
+  height: 400px;
+  background-color: grey;
+}
+</style>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA88INSm7Of_HmfnzSX4oox0NNI7QeCrKA&callback=initMap">
+</script>
 <body>
-  My map will go here
+  My Google map
+  <div id="map"></div>
+  <script>
+    function initMap() {
+      var Hayward = {lat: 37.646993, lng: -122.114681};
+      var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 12,
+        center: Hayward
+      });
+      var geocoder = new google.maps.Geocoder();
+      var test_location = "24212 Nora Cir, Hayward, CA, USA";
+
+      geocoder.geocode( { 'address': test_location  }, function(results) {
+        var emoji = 'poop.png';
+        var marker = new google.maps.Marker({
+          map: map,
+          position: results[0].geometry.location,
+          animation: google.maps.Animation.DROP,
+          icon: emoji
+        });
+      });
+    }
+  </script>
 </body>
 </html>
