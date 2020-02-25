@@ -1,6 +1,7 @@
 <html>
 <head>
   <title>My map</title>
+  <script src="http://code.jquery.com/jquery-latest.js"></script>
 </head>
 <style>
 #map {
@@ -16,6 +17,12 @@
   My Google map
   <div id="map"></div>
   <script>
+    const crimeToEmoji = {
+      "Vandalism": "vandalism.png",
+      "Larceny from Auto": "larceny_auto.png",
+      "Larceny": "larceny.png",
+    };
+
     function initMap() {
       var Hayward = {lat: 37.646993, lng: -122.114681};
       var map = new google.maps.Map(document.getElementById('map'), {
@@ -23,18 +30,30 @@
         center: Hayward
       });
       var geocoder = new google.maps.Geocoder();
-      var test_location = "24212 Nora Cir, Hayward, CA, USA";
-
-      geocoder.geocode( { 'address': test_location  }, function(results) {
-        var emoji = 'poop.png';
-        var marker = new google.maps.Marker({
-          map: map,
-          position: results[0].geometry.location,
-          animation: google.maps.Animation.DROP,
-          icon: emoji
+      const haywardCrimeLastYear = "https://maps.hayward-ca.gov/arcgis/rest/services/OpenData/COH_CrimeData/FeatureServer/0/query?where=Date%20%3E%3D%20TIMESTAMP%20'2019-05-19%2001%3A05%3A00'%20AND%20Date%20%3C%3D%20TIMESTAMP%20'2020-05-19%2001%3A05%3A00'&outFields=*&outSR=4326&f=json"
+      $.get(haywardCrimeLastYear, function (data) {
+        const items = data.features;
+        $.each(items, function(i){
+          if( i == 10  ){ return false;  }
+          var crime_location = items[i].attributes.Address + ", Hayward, CA, USA";
+          geocoder.geocode( { 'address': crime_location }, function(results) {
+            if (results) {
+              const emoji = crimeToEmoji[items[i].attributes.Crime_Type];
+              var marker = new google.maps.Marker({
+                map: map,
+                position: results[0].geometry.location,
+                animation: google.maps.Animation.DROP,
+                icon: emoji,
+                title: items[i].attributes.Crime_Type
+              });
+            }
+          });
         });
       });
     }
   </script>
+
+
+
 </body>
 </html>
