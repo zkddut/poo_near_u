@@ -10,50 +10,90 @@
   background-color: grey;
 }
 </style>
-<script async defer
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA88INSm7Of_HmfnzSX4oox0NNI7QeCrKA&callback=initMap">
+<script defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA88INSm7Of_HmfnzSX4oox0NNI7QeCrKA&callback=updateMap">
 </script>
 <body>
   My Google map
   <div id="map"></div>
+  <form>
+    <label for="start_time">Start Time:</label><br>
+    <input type="text" id="start_time" name="start_time"><br>
+    <label for="end_time">End Time:</label><br>
+    <input type="text" id="end_time" name="end_time"><br><br>
+    <input type="submit" id="query_submit" value="Query">
+  </form>
+  <div id="output"></div>
+  <div id="test_output"></div>
+
   <script>
+    $(document).ready(function() {
+      $("#query_submit").click(function(e) {
+        e.preventDefault();
+        var x = $("form").serializeArray(); 
+        $("#output").html("");
+        $.each(x, function(i, field) { 
+          $("#output").append(field.name + ":" + field.value + " "); 
+        }); 
+        updateMap();
+      }); 
+    }); 
+
     const crimeToEmoji = {
       "Vandalism": "vandalism.png",
       "Larceny from Auto": "larceny_auto.png",
       "Larceny": "larceny.png",
     };
 
-    function initMap() {
+    function updateMap(start_time= "2019-01-01", end_time="2020-01-01") {
       var Hayward = {lat: 37.646993, lng: -122.114681};
       var map = new google.maps.Map(document.getElementById('map'), {
         zoom: 12,
         center: Hayward
       });
+      const crime_data = [];
       var geocoder = new google.maps.Geocoder();
-      const haywardCrimeLastYear = "https://maps.hayward-ca.gov/arcgis/rest/services/OpenData/COH_CrimeData/FeatureServer/0/query?where=Date%20%3E%3D%20TIMESTAMP%20'2019-05-19%2001%3A05%3A00'%20AND%20Date%20%3C%3D%20TIMESTAMP%20'2020-05-19%2001%3A05%3A00'&outFields=*&outSR=4326&f=json"
-      $.get(haywardCrimeLastYear, function (data) {
-        const items = data.features;
-        $.each(items, function(i){
-          if( i == 10  ){ return false;  }
-          var crime_location = items[i].attributes.Address + ", Hayward, CA, USA";
-          geocoder.geocode( { 'address': crime_location }, function(results) {
-            if (results) {
-              const emoji = crimeToEmoji[items[i].attributes.Crime_Type];
-              var marker = new google.maps.Marker({
-                map: map,
-                position: results[0].geometry.location,
-                animation: google.maps.Animation.DROP,
-                icon: emoji,
-                title: items[i].attributes.Crime_Type
-              });
-            }
+      const haywardCrimeLastYear =
+        "https://maps.hayward-ca.gov/arcgis/rest/services/OpenData/COH_CrimeData/FeatureServer/0/query?where=Date%20%3E%3D%20TIMESTAMP%20'" +
+        "2019-05-19" +
+        "%2001%3A05%3A00'%20AND%20Date%20%3C%3D%20TIMESTAMP%20'" +
+        "2020-05-19" +
+        "%2001%3A05%3A00'&outFields=*&outSR=4326&f=json";
+
+      $.ajax({
+        url: haywardCrimeLastYear,
+        type: 'get',
+        dataType: 'json',
+        async: false,
+        success: function(data) {
+          const items = data.features;
+          $('#test_output').html("");
+          $.each(items, function(i){
+            if( i == 10  ){ return false; }
+            crime_data.push(
+              {
+                "location": items[i].attributes.Address + " , Hayward, CA, USA",
+                "type": items[i].attributes.Crime_Type,
+                "geo": { "lat": items[i].geometry.y, "lng": items[i].geometry.x }
+              }
+            ); 
+            $('#test_output').append(i + ":" + crime_data[i].location + ":" + items[i].attributes.Crime_Type + "<br>");
           });
-        });
+        }
       });
+
+      crime_data.forEach((crime_entry) => {
+        const emoji = crimeToEmoji[crime_entry.type];
+        var marker = new google.maps.Marker({
+          map: map,
+          position: crime_entry.geo,
+          animation: google.maps.Animation.DROP,
+          icon: emoji,
+          title: crime_entry.type
+        });
+      })
     }
   </script>
-
-
 
 </body>
 </html>
